@@ -11,7 +11,7 @@ end entity;
 
 architecture rtl of forwarding_unit is
 begin
-    process(all)
+    process(slot, ids, used, original, wb)
     begin
         selected <= original;
         hits <= "000";
