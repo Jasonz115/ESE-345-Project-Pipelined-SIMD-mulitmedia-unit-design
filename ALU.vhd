@@ -106,7 +106,7 @@ begin
 						resize(signed(rs2(i*16+15 downto i*16)), 32);
 						if sum > 32767 then
 							rd(i*16+15 downto i*16)<= x"7FFF";
-						elsif sum < -32767 then
+						elsif sum < -32768 then
 							rd(i*16+15 downto i*16)<= x"8000";
 						else
 							rd(i*16+15 downto i*16)<= std_logic_vector(sum(15 downto 0)); 
@@ -119,7 +119,7 @@ begin
 						resize(signed(rs1(i*16+15 downto i*16)), 32);
 						if sum > 32767 then
 							rd(i*16+15 downto i*16)<= x"7FFF";
-						elsif sum < -32767 then
+						elsif sum < -32768 then
 							rd(i*16+15 downto i*16)<= x"8000";
 						else	
 							rd(i*16+15 downto i*16)<= std_logic_vector(sum(15 downto 0));
@@ -151,14 +151,14 @@ begin
         				rd(i*32+31 downto i*32) <= std_logic_vector(to_unsigned(cnt, 32));
     				end loop;	
 					
-					when "1100" =>                          -- CNTLZ
-    					for i in 0 to 7 loop
+					when "1100" =>                          -- CNTLZ 
+    				for i in 0 to 3 loop
         			cnt := 0;
-        			for j in 15 downto 0 loop
-            			exit when rs1(i*16 + j) = '1';
+        			for j in 31 downto 0 loop
+            			exit when rs1(i*32 + j) = '1';
             			cnt := cnt + 1;
         			end loop;
-        				rd(i*16+15 downto i*16) <= std_logic_vector(to_unsigned(cnt, 16));
+        				rd(i*32+31 downto i*32) <= std_logic_vector(to_unsigned(cnt, 16));
     				end loop;
 					
 					when "0001" =>                          -- ABSDB
@@ -173,14 +173,14 @@ begin
     				end loop; 
 						
 					when others =>	
-                    	wr_en <= '0';          -- op not implemented yet
+                    	wr_en <= '0';         
                 	end case; 
 					--------------------------------------r4 op-----------------------------
-					when "10" =>		 --Signed Integer Multiply-Add Low with Saturation
+					when "10" =>		 
 					wr_en <= '1';
 					case instr(22 downto 20) is 
 						
-					when "000" =>
+					when "000" =>	  --Signed Integer Multiply-Add Low with Saturation
 						for i in 0 to 3 loop
 							prod:= signed(rs3(i*32+15 downto i*32)) * signed(rs2(i*32+15 downto i*32));
 							acc:= resize(signed(rs1(i*32+31 downto i*32)), 64) + resize(prod,64);
