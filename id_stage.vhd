@@ -3,18 +3,19 @@ library ieee;
 use ieee.std_logic_1164.all;
 use work.pipeline_types.all;
 
-entity decode_stage is
+entity id_stage is
     port (clk, reset : in std_logic; if_id : in stage; wb : in writeback;
-          id_ex : out execute_input; bypass_hits : out source_mask;
-          registers : out reg_bank);
+          -- register file read ports (the register file sits at the top level)
+          rf_ids : out source_ids; rf_data : in operands;
+          id_ex : out execute_input; bypass_hits : out source_mask);
 end entity;
 
-architecture rtl of decode_stage is
+architecture rtl of id_stage is
     signal ids : source_ids;
     signal used : source_mask;
-    signal from_rf, selected : operands;
+    signal selected : operands;
 begin
-    process(all)
+    process(if_id)
         variable ins : instruction;
     begin
         ins := if_id.ins;
@@ -34,10 +35,10 @@ begin
             end case;
         end if;
     end process;
-    rf : entity work.register_file port map (clk, reset, ids, from_rf, wb, registers);
+    rf_ids <= ids;
     -- capture a write occurring on the same edge that ID advances.
     wb_to_id : entity work.forwarding_unit
-        port map (if_id, ids, used, from_rf, wb, selected, bypass_hits);
+        port map (if_id, ids, used, rf_data, wb, selected, bypass_hits);
     -- capture the selected data and source IDs together for the next stage
     process(clk)
     begin
