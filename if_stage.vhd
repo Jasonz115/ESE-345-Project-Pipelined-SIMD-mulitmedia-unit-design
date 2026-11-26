@@ -3,7 +3,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use work.pipeline_types.all;
 
-entity fetch_stage is
+entity if_stage is
     port (clk, reset, load_en : in std_logic;
           load_addr : in natural range 0 to 63;
           load_data : in instruction;
@@ -11,18 +11,21 @@ entity fetch_stage is
           fetch_slot, if_id : out stage);
 end entity;
 
-architecture rtl of fetch_stage is
-    type buffer_type is array (0 to 63) of instruction;
-    signal buffer_mem : buffer_type;
+architecture rtl of if_stage is
     signal pc : natural range 0 to 64 := 0;
     signal current_slot : stage;
+    signal fetched : instruction;
 begin
-    process(all)
+    -- the buffer is loaded by the testbench while the PC is held in reset
+    ibuf : entity work.instruction_buffer
+        port map (clk, load_en, load_addr, load_data, pc, fetched);
+
+    process(reset, pc, program_length, fetched)
     begin
         current_slot <= bubble;
         -- send an empty slot after the last instruction so the pipeline can drain
         if reset = '0' and pc < program_length then
-            current_slot <= ('1', pc, buffer_mem(pc));
+            current_slot <= ('1', pc, fetched);
         end if;
     end process;
     fetch_slot <= current_slot;
@@ -30,10 +33,6 @@ begin
     process(clk)
     begin
         if rising_edge(clk) then
-            -- load the instruction buffer while the testbench holds the PC in reset
-            if load_en = '1' then
-                buffer_mem(load_addr) <= load_data;
-            end if;
             if reset = '1' then
                 pc <= 0;
                 if_id <= bubble;
