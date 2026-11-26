@@ -18,7 +18,7 @@ architecture test of modules_tb is
 begin
     rf : entity work.register_file port map (clk, rst, ids, q, wb, bank);
     fw : entity work.forwarding_unit port map (d, ids, used, q, wb, selected, hits);
-    fetch : entity work.fetch_stage port map(clk, rst, load_en, addr, nop, length, f, d);
+    fetch : entity work.if_stage port map(clk, rst, load_en, addr, nop, length, f, d);
     process
         procedure tick is
         begin
