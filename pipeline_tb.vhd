@@ -1,13 +1,17 @@
 -- run an instruction file and check the final register values
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 use std.textio.all;
 use work.pipeline_types.all;
 
 entity pipeline_tb is
-    generic (program_file : string := "coverage_program.txt";
-             expected_file : string := "coverage_expected.txt";
-             check_smoke_timing : boolean := false);
+generic (
+    program_file : string := "coverage_program.txt";
+    expected_file : string := "coverage_expected.txt";
+    check_smoke_timing : boolean := false;
+    check_full_coverage : boolean := true
+);
 end entity;
 
 architecture test of pipeline_tb is
@@ -23,7 +27,7 @@ architecture test of pipeline_tb is
     begin
         write(l, " " & name & "=");
         if s.valid = '1' then
-            write(l, integer'image(s.pc) & "/" & to_string(s.ins));
+            write(l, integer'image(s.pc) & "/" & mnemonic(s.ins) & "(" & to_hex(s.ins) & ")");
         else
             write(l, string'("-"));
         end if;
@@ -39,7 +43,8 @@ begin
         variable bits : instruction;
         variable value : reg_value;
         variable count : natural := 0;
-        variable good : boolean;
+        variable seen : std_logic_vector(24 downto 0) := (others => '0');
+        variable op_index : natural range 0 to 24;
         procedure tick is
         begin
             wait for 5 ns;
@@ -56,8 +61,13 @@ begin
             for k in l.all'range loop
                 assert l.all(k) = '0' or l.all(k) = '1' report "Nonbinary instruction" severity failure;
             end loop;
-            read(l, bits, good);
-            assert good severity failure;
+            -- first character is the most significant bit
+            bits := (others => '0');
+            for k in 0 to 24 loop
+                if l.all(l.all'low + k) = '1' then
+                    bits(24 - k) := '1';
+                end if;
+            end loop;
             addr <= count;
             data <= bits;
             load_en <= '1';
@@ -75,16 +85,43 @@ begin
             log_slot(row_text, "ID", t.decode);
             log_slot(row_text, "EX", t.ex.slot);
             log_slot(row_text, "WB", t.wb.slot);
-            write(row_text, " ID_bypass=" & to_string(t.decode_bypass));
-            write(row_text, " EX_used=" & to_string(t.ex.used) & " EX_forward=" & to_string(t.forwarded));
+            write(row_text, " ID_bypass=" & to_bin(t.decode_bypass));
+            write(row_text, " EX_used=" & to_bin(t.ex.used) & " EX_forward=" & to_bin(t.forwarded));
             for i in 1 to 3 loop
-                write(row_text, " src" & integer'image(i) & "=" & to_string(t.ex.ids(i))
-                      & "/" & to_hstring(t.alu_inputs(i)));
+                write(row_text, " src" & integer'image(i) & "=" & reg_name(t.ex.ids(i))
+                      & "/" & to_hex(t.alu_inputs(i)));
             end loop;
-            write(row_text, " EX_write=" & std_logic'image(t.alu_write) & " EX_result=" & to_hstring(t.alu_result));
-            write(row_text, " WB_write=" & std_logic'image(t.wb.enable) & " WB_rd=" & to_string(t.wb.dest)
-                  & " WB_data=" & to_hstring(t.wb.data));
+            write(row_text, " EX_write=" & std_logic'image(t.alu_write) & " EX_result=" & to_hex(t.alu_result));
+            write(row_text, " WB_write=" & std_logic'image(t.wb.enable) & " WB_rd=" & reg_name(t.wb.dest)
+                  & " WB_data=" & to_hex(t.wb.data));
             writeline(results, row_text);
+            -- Verify one instruction advances each cycle without stalls.
+            if cycle >= 3 and cycle <= count + 2 then
+                assert t.ex.slot.valid = '1' and t.ex.slot.pc = cycle - 3
+                    report "EX pipeline timing error" severity failure;
+                if t.ex.slot.ins(24) = '0' then
+                    op_index := 0;
+                elsif t.ex.slot.ins(23) = '0' then
+                    op_index := 1 + to_integer(unsigned(t.ex.slot.ins(22 downto 20)));
+                else
+                    op_index := 9 + to_integer(unsigned(t.ex.slot.ins(18 downto 15)));
+                end if;
+                seen(op_index) := '1';
+                if op_index = 9 then
+                    assert t.alu_write = '0' and t.forwarded = "000"
+                        report "NOP must not write or forward" severity failure;
+                else
+                    assert t.alu_write = '1' report "Missing EX write enable" severity failure;
+                end if;
+            else
+                assert t.ex.slot.valid = '0' report "Unexpected EX instruction" severity failure;
+            end if;
+            if cycle >= 4 then
+                assert t.wb.slot.valid = '1' and t.wb.slot.pc = cycle - 4
+                    report "WB pipeline timing error" severity failure;
+            else
+                assert t.wb.slot.valid = '0' report "Unexpected WB instruction" severity failure;
+            end if;
             -- check forwarding into LI and then into both AU operands
             if check_smoke_timing then
                 if cycle = 4 then
@@ -100,17 +137,23 @@ begin
             wait for 5 ns;
             clk <= '0';
         end loop;
+	if check_full_coverage and not check_smoke_timing then
+    	assert seen = (seen'range => '1')
+        	report "Incomplete instruction coverage: "
+            	& to_bin(seen) severity failure;
+    	report "PASS: all 25 instruction types reached EX"
+        severity note;
+	end if;
         -- compare all 32 registers in order from r0 through r31
         for i in bank'range loop
             assert not endfile(expected) report "Missing expected value for register " & integer'image(i) severity failure;
             readline(expected, l);
-            assert l.all'length = 32 report "Expected 32 hex digits per register" severity failure;
-            hread(l, value, good);
-            assert good and not is_x(value) report "Invalid expected hex value" severity failure;
-            write(row_text, to_hstring(bank(i)));
+            assert l.all'length = 32 and valid_hex(l.all) report "Expected 32 hex digits per register" severity failure;
+            value := hex_to_slv(l.all);
+            write(row_text, to_hex(bank(i)));
             writeline(reg_output, row_text);
-            assert bank(i) = value report "r" & integer'image(i) & " expected " & to_hstring(value)
-                & " got " & to_hstring(bank(i)) severity failure;
+            assert bank(i) = value report "r" & integer'image(i) & " expected " & to_hex(value)
+                & " got " & to_hex(bank(i)) severity failure;
         end loop;
         assert endfile(expected) report "Extra expected register lines" severity failure;
         report "PASS: all 32 registers match" severity note;
@@ -123,4 +166,18 @@ architecture test of smoke_tb is
 begin
     short_run : entity work.pipeline_tb
         generic map ("smoke_program.txt", "smoke_expected.txt", true);	   -- smoke is just a given name to test with the four instructions LI(16 bit halfword), LI(the other 16 bits), AU, NOP
+end architecture;	   
+
+
+entity directed_tb is
+end entity;
+architecture test of directed_tb is
+begin
+    directed_run : entity work.pipeline_tb
+        generic map (
+            program_file => "directed_program.txt",
+            expected_file => "directed_expected.txt",
+            check_smoke_timing => false,
+            check_full_coverage => false
+        );
 end architecture;
