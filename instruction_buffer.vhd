@@ -28,3 +28,4 @@ begin
     -- pc reaches 64 after a full 64-instruction program, which is past the end of the buffer
     instr <= buffer_mem(pc) when pc < 64 else nop;
 end architecture;
+    
