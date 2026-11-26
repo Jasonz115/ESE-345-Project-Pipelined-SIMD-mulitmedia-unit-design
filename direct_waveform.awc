@@ -1,0 +1,51 @@
+<config>
+    <version>
+        3.1
+    </version>
+    <comment>
+    </comment>
+    <databases>
+        <database id="">*virtual*</database>
+        <database id="826a2c1bb110752e086bf20be6201100">direct_waveform.asdb</database>
+    </databases>
+    <gridshown/>
+    <signallists>
+        <signallist id="0">
+        <signal>/directed_tb/directed_run/clk</signal>
+        <signal>/directed_tb/directed_run/reset</signal>
+        <signal>/directed_tb/directed_run/load_en</signal>
+        <signal>/directed_tb/directed_run/addr</signal>
+        <signal>/directed_tb/directed_run/length</signal>
+        <signal>/directed_tb/directed_run/data</signal>
+        <signal>/directed_tb/directed_run/t</signal>
+        <signal>/directed_tb/directed_run/bank</signal>
+        </signallist>
+    </signallists>
+    <timebases>
+        <timebase id="0">
+            <time start_time="0" end_time="153958" />
+        </timebase>
+    </timebases>
+    <prefbases>
+        <prefbase id="0" >
+        </prefbase>
+    </prefbases>
+    <bookmarkbases>
+        <bookmarks id="0">
+        </bookmarks>
+    </bookmarkbases>
+    <cursorbases>
+        <cursors id="0">
+            <cursor value="265235" label="Cursor 1" locked="0" />
+        </cursors>
+    </cursorbases>
+    <measurementbases>
+    </measurementbases>
+    <commentbases>
+        <comments id="0">
+        </comments>
+    </commentbases>
+    <views>
+        <view signallist="0" propertybase="0" prefbase="0" type="1" bookmarks="0" cursors="0" measurements="-1" comments="-1" />
+    </views>
+</config>

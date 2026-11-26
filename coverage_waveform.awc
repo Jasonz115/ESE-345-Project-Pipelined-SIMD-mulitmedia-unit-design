@@ -1,0 +1,51 @@
+<config>
+    <version>
+        3.1
+    </version>
+    <comment>
+    </comment>
+    <databases>
+        <database id="">*virtual*</database>
+        <database id="826a2c1bb1107427086b4eafca200f00">waveform.asdb</database>
+    </databases>
+    <gridshown/>
+    <signallists>
+        <signallist id="0">
+        <signal>/pipeline_tb/clk</signal>
+        <signal>/pipeline_tb/reset</signal>
+        <signal>/pipeline_tb/load_en</signal>
+        <signal>/pipeline_tb/addr</signal>
+        <signal>/pipeline_tb/length</signal>
+        <signal>/pipeline_tb/data</signal>
+        <signal>/pipeline_tb/t</signal>
+        <signal>/pipeline_tb/bank</signal>
+        </signallist>
+    </signallists>
+    <timebases>
+        <timebase id="0">
+            <time start_time="0" end_time="19244" />
+        </timebase>
+    </timebases>
+    <prefbases>
+        <prefbase id="0" >
+        </prefbase>
+    </prefbases>
+    <bookmarkbases>
+        <bookmarks id="0">
+        </bookmarks>
+    </bookmarkbases>
+    <cursorbases>
+        <cursors id="0">
+            <cursor value="931611" label="Cursor 1" locked="0" />
+        </cursors>
+    </cursorbases>
+    <measurementbases>
+    </measurementbases>
+    <commentbases>
+        <comments id="0">
+        </comments>
+    </commentbases>
+    <views>
+        <view signallist="0" propertybase="0" prefbase="0" type="1" bookmarks="0" cursors="0" measurements="-1" comments="-1" />
+    </views>
+</config>
