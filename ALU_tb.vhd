@@ -242,10 +242,10 @@ begin
 		
 				 
 		        -- 1100: count leading zeros per word 
-        run_test("CNTLZ", mk_r3(OP_CNTLZ),
-                 x"0000_0001_8000_00FF_0F00_FFFF_4000_0000",
-                 ZERO, ZERO,
-                 x"0010_000F_0000_0008_0004_0000_0001_0010", '1');
+		run_test("CNTLZ", mk_r3(OP_CNTLZ),
+         		x"0000_0001_8000_00FF_0F00_FFFF_4000_0000",
+         		ZERO, ZERO,
+         		x"0000_001F_0000_0000_0000_0004_0000_0001", '1');
 
         --R4 Int (32-bit fields)
         -- args to run_test: name, instr, rs1, rs2, rs3, expected, wr_en
