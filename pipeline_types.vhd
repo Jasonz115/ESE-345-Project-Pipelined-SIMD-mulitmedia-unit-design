@@ -1,41 +1,46 @@
--- shared signal types for the four pipeline stages
+-- pipe_type file is implemented so it shared signal types for the four pipeline stages
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-package pipeline_types is
-    subtype instruction is std_logic_vector(24 downto 0);
+package pipeline_types is  	  
+	--data type
+	--25-bit machine instruction
+	--which register is being accessed using the 5 bits can represent 2^5 different registers
+	--128-bit data inside a register
+    subtype instruction is std_logic_vector(24 downto 0);  
     subtype reg_index is std_logic_vector(4 downto 0);
     subtype reg_value is std_logic_vector(127 downto 0);
-    type reg_bank is array (0 to 31) of reg_value;
-    type source_ids is array (1 to 3) of reg_index;
-    type operands is array (1 to 3) of reg_value;
-    subtype source_mask is std_logic_vector(1 to 3);
+	--array definitions
+    type reg_bank is array (0 to 31) of reg_value;		--entire register file 
+    type source_ids is array (1 to 3) of reg_index;		--multimedia unit supports instructions that need three source registers.
+    type operands is array (1 to 3) of reg_value;		--same reason above
+    subtype source_mask is std_logic_vector(1 to 3);	 --identifies which source operands an instruction use
     constant nop : instruction := "11" & (22 downto 0 => '0');
-    -- carry the instruction address into each stage for the cycle trace
-    type stage is record
+    -- carry the instruction address, if it valid instruction and pc through the pipeline stages
+    type stage is record  --if/id pipeline register 
         valid : std_logic;
         pc : natural range 0 to 63;
         ins : instruction;
     end record;
     -- valid is low for an empty stage and high for a fetched NOP
-    constant bubble : stage := ('0', 0, nop);
-    type execute_input is record
-        slot : stage;
-        ids : source_ids;
-        used : source_mask;
-        data : operands;
+    constant bubble : stage := ('0', 0, nop);	 --bubble = empty pipline stage
+    type execute_input is record --id/ex pipeline register
+        slot : stage;		--instruction, PC and valid bit
+        ids : source_ids;	--3 source register addresses
+        used : source_mask;	 --which operands are needed
+        data : operands;	 --3 128-bit operand values
     end record;
-    type writeback is record
-        slot : stage;
-        enable : std_logic;
-        dest : reg_index;
-        data : reg_value;
+    type writeback is record   --wb pipeline register
+        slot : stage;		
+        enable : std_logic;	   --register write enable
+        dest : reg_index;	   --destination register address
+        data : reg_value;	  --128 bit execution result
     end record;
     constant empty_ex : execute_input :=
-        (bubble, (others => (others => '0')), "000", (others => (others => '0')));
+        (bubble, (others => (others => '0')), "000", (others => (others => '0')));	 --emtpy pipeline
     constant empty_wb : writeback := (bubble, '0', (others => '0'), (others => '0'));
-    type pipeline_trace is record
+    type pipeline_trace is record	  --
         fetch, decode : stage;
         ex : execute_input;
         wb : writeback;
@@ -46,13 +51,13 @@ package pipeline_types is
         alu_write : std_logic;
     end record;
 
-    -- text helpers for the results file; plain VHDL-93, so no to_string / to_hstring / hread
-    function mnemonic (ins : instruction) return string;      -- "AU", "LI", "NOP", ...
-    function to_hex (v : std_logic_vector) return string;
-    function to_bin (v : std_logic_vector) return string;
-    function reg_name (r : reg_index) return string;          -- "r17"
-    function valid_hex (s : string) return boolean;
-    function hex_to_slv (s : string) return std_logic_vector;
+    -- text helpers for the results file
+    function mnemonic (ins : instruction) return string;      -- convert instruction encoding to readable :"AU", "LI", "NOP", ...
+    function to_hex (v : std_logic_vector) return string;		--hex convert
+    function to_bin (v : std_logic_vector) return string;		 --logic to binary str
+    function reg_name (r : reg_index) return string;          -- convert hex str into a logic vector
+    function valid_hex (s : string) return boolean;			   --chcek if string contains valid hex char
+    function hex_to_slv (s : string) return std_logic_vector;	--hexadecimal str into a logic vector
 end package;
 
 package body pipeline_types is
